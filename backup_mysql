@@ -33,7 +33,7 @@ rotate(){
 
 	echo $(date +"$DATE_FORMAT_LOG")" rotate $dir $rotate"
 	
-	find $dir -ctime +$rotate -type f -name '*.tar.gz' -exec rm -f {} \;
+	find $dir -ctime +$rotate -type f -name '*.sql.gz' -exec rm -f {} \;
 }
 
 list_db() {
@@ -76,7 +76,7 @@ backup() {
 
 	chmod 600 $gz_backup
 
-	#rotate $db_backup $rotate	
+	rotate $db_backup $rotate	
 }
 
 
