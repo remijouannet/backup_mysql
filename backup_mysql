@@ -127,11 +127,9 @@ CURRENT_DOM=$(date +'%d' | sed -e 's/^0//g')
 ROTATE_WEEKLY=$(datediff "now" "-$ROTATE_WEEKLY week")
 ROTATE_MONTHLY=$(datediff "now" "-$ROTATE_MONTHLY month")
 
-list_db | 
-while read db
+list_db | while read db
 do
-	if [ "$MYSQL_DATABASES_ALL" -eq 1 ] || \
-		[ $(contains $db ${MYSQL_DATABASES[@]};echo $?) -eq 0 ]
+	if [ "$MYSQL_DATABASES_ALL" -eq 1 ] || [ $(contains $db ${MYSQL_DATABASES[@]};echo $?) -eq 0 ]
 	then
 		if [ $DAILY = true ] && [ $(contains $CURRENT_DOW ${DAYS_DAILY[@]};echo $?) -eq 0 ]
 		then
