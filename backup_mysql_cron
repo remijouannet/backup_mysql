@@ -10,7 +10,9 @@ rotate() {
 		rm $log_file"."$rotate".gz"
 	fi
 
-	if [ "$(du -sb $LOG_FILE | cut -f1)" -ge "$maxbytes" ]
+	currentbytes=$(du -sb $LOG_FILE | cut -f1)
+
+	if [ $currentbytes -ge $maxbytes ]
 	then		
 		local i=$rotate	
 		while [ "$i" -ne 0 ]
