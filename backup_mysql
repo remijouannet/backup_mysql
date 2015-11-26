@@ -52,7 +52,8 @@ connect_mysql() {
 	--port=$MYSQL_PORT \
 	--user=$MYSQL_USER \
 	--password=$MYSQL_PASSWORD 
-	--execute="SHOW DATABASES;" > /dev/null
+	--execute="SHOW DATABASES;" 
+	--silent > /dev/null
 }
 
 backup() {
