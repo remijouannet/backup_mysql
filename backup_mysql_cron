@@ -48,7 +48,6 @@ else
 	exit 1
 fi
 
-rotate $LOG_FILE $LOG_FILE_MAXBYTES $LOG_FILE_ROTATE
 
 logger "backup_mysql create $(dirname $LOG_FILE)"
 if [ ! -d $(dirname $LOG_FILE) ] 
@@ -72,6 +71,8 @@ else
 	logger "backup_mysql could not find /usr/sbin/backup_mysql or backup_mysql"
 	exit 1
 fi
+
+rotate $LOG_FILE $LOG_FILE_MAXBYTES $LOG_FILE_ROTATE
 
 logger "backup_mysql launch $EXEC $CONF_FILE"
 $EXEC $CONF_FILE >> $LOG_FILE  2>&1;
