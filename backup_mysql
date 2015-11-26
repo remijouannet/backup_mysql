@@ -74,7 +74,11 @@ backup() {
 		--password=$MYSQL_PASSWORD \
 		$db | gzip -c > $gz_backup
 
-	chmod 600 $gz_backup && rotate $db_backup $rotate	
+	if [ -f $gz_backup ]
+	then
+		chmod 600 $gz_backup
+		rotate $db_backup $rotate	
+	fi
 }
 
 
