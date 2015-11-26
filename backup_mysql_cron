@@ -49,8 +49,10 @@ fi
 rotate $LOG_FILE $LOG_FILE_MAXBYTES $LOG_FILE_ROTATE
 
 logger "backup_mysql create $(dirname $LOG_FILE)"
-[ -d $(dirname $LOG_FILE) ] || mkdir -p $(dirname $LOG_FILE) || \
-	logger "can't create to $(dirname $LOG_FILE)"
+if [ ! -d $(dirname $LOG_FILE) ] 
+then
+	mkdir -p $(dirname $LOG_FILE) || logger "can't create to $(dirname $LOG_FILE)"
+fi
 
 if [ ! -w $(dirname $LOG_FILE) ]
 then
