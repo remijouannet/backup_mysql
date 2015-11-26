@@ -1,0 +1,79 @@
+#!/bin/bash
+
+rotate() {
+	local log_file=$1
+	local maxbytes=$2
+	local rotate=$3
+
+	if [ -f $log_file"."$rotate".gz" ]
+	then
+		rm $log_file"."$rotate".gz"
+	fi
+
+	if [ "$(du -sb $LOG_FILE | cut -f1)" -ge "$maxbytes" ]
+	then		
+		local i=$rotate	
+		while [ "$i" -ne 0 ]
+		do
+			if [ -f $log_file"."$i".gz" ]
+			then
+				mv $log_file"."$i".gz" $log_file"."$(($i+1))".gz"
+    			fi
+			let i=$i-1
+  		done
+	
+		gzip -c $log_file > $log_file"."1.gz
+		cat /dev/null > $log_file
+	fi
+}
+
+
+if [ "$#" -eq 1 ] && [ -f "$1" ]
+then
+	CONF_FILE=$1
+	. $1
+elif [ -f ./backup_mysql.ini ]	
+then	
+	CONF_FILE=./backup_mysql.ini
+	. ./backup_mysql.ini
+elif [ -f /etc/backup_mysql/backup_mysql.ini ]
+then
+	CONF_FILE=/etc/backup_mysql/backup_mysql.ini
+        . /etc/backup_mysql/backup_mysql.ini
+else
+	logger "backup_mysql could not find /etc/backup_mysql/backup_mysql.ini \
+			or backup_mysql.ini or $1"
+	exit 1
+fi
+
+rotate $LOG_FILE $LOG_FILE_MAXBYTES $LOG_FILE_ROTATE
+
+logger "backup_mysql create $(dirname $LOG_FILE)"
+[ -d $(dirname $LOG_FILE) ] || mkdir -p $(dirname $LOG_FILE) || \
+	logger "can't create to $(dirname $LOG_FILE)"
+
+if [ ! -w $(dirname $LOG_FILE) ]
+then
+	logger "can't write to $(dirname $LOG_FILE)"
+	exit 1
+fi
+
+if [ -f ./backup_mysql ]	
+then
+	EXEC="./backup_mysql"
+elif [ -f /usr/sbin/backup_mysql ]
+then
+        EXEC="/usr/sbin/backup_mysql"
+else
+	logger "backup_mysql could not find /usr/sbin/backup_mysql or backup_mysql"
+	exit 1
+fi
+
+logger "backup_mysql launch $EXEC $CONF_FILE"
+$EXEC $CONF_FILE >> $LOG_FILE  2>&1;
+if [ $? -ne 0 ]
+then
+	echo "log" | mail -s "[$HOSTNAME] backup_mysql failed" -a $LOG_FILE $FROM_MAIL $MAIL
+fi
+
+exit 0

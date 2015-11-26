@@ -1,0 +1,148 @@
+#!/bin/bash
+
+datediff() {
+    d1=$(date -d "$1" +%s)
+    d2=$(date -d "$2" +%s)
+    echo $(( (d1 - d2) / 86400 ))
+}
+
+contains() {
+  local e
+  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+  return 1
+}
+
+return1(){
+	return 1
+}
+
+check() {
+	$@;exitcode=$?
+ 
+	if [ $exitcode -ne 0 ] ;
+	then
+		echo $(date +"$DATE_FORMAT_LOG")" error";
+		exit $exitcode ;
+	fi
+}
+
+
+rotate(){
+	local dir=$1
+	local rotate=$2
+
+	echo $(date +"$DATE_FORMAT_LOG")" rotate $dir $rotate"
+	
+	find $dir -ctime +$rotate -type f -name '*.tar.gz' -exec rm -f {} \;
+}
+
+list_db() {
+	mysql \
+	--host=$MYSQL_HOST \
+	--port=$MYSQL_PORT \
+	--user=$MYSQL_USER \
+	--password=$MYSQL_PASSWORD 
+	--execute="SHOW DATABASES;"
+	--silent
+}
+
+connect_mysql() {
+	mysql \
+	--host=$MYSQL_HOST \
+	--port=$MYSQL_PORT \
+	--user=$MYSQL_USER \
+	--password=$MYSQL_PASSWORD 
+	--execute="SHOW DATABASES;" > /dev/null
+}
+
+backup() {
+	local db=$1
+	local type_backup=$2
+	local rotate=$3
+	
+	local db_backup=$DIR_BACKUP/$type_backup/$db
+	local gz_backup=$db_backup/$db'_'$(date +"$DATE_FORMAT_BACKUP")'.sql.gz'
+
+	echo $(date +"$DATE_FORMAT_LOG")" backup $db $type_backup"	
+	[ -d $db_backup ] || check mkdir $db_backup
+	
+	mysqldump \
+		--host=$MYSQL_HOST \
+		--port=$MYSQL_PORT \
+		--user=$MYSQL_USER \
+		--password=$MYSQL_PASSWORD \
+		$db | gzip -c > $gz_backup
+
+	chmod 600 $gz_backup
+
+	#rotate $db_backup $rotate	
+}
+
+
+#########################BEGINNGING#########################
+
+
+if [ "$#" -eq 1 ] && [ -f "$1" ]	
+then
+	. $1
+elif [ -f ./backup_mysql.ini ]	
+then
+	. ./backup_mysql.ini
+elif [ -f /etc/backup_mysql/backup_mysql.ini ]
+then
+        . /etc/backup_mysql/backup_mysql.ini
+else
+	echo $(date +"$DATE_FORMAT_LOG")\
+		" could not find /etc/backup_mysql/backup_mysql.ini or backup_mysql.ini or $1"
+	exit 1
+fi
+
+prebackup
+
+echo $(date +"$DATE_FORMAT_LOG")" check gunzip"
+check which gunzip;
+
+echo $(date +"$DATE_FORMAT_LOG")" check $DIR_BACKUP"
+check ls $DIR_BACKUP;
+
+echo $(date +"$DATE_FORMAT_LOG")" check mysql connection"
+check connect_mysql;
+
+echo $(date +"$DATE_FORMAT_LOG")" Test writing permissions $DIR_BACKUP"
+[ -w $DIR_BACKUP ] || check return1;
+
+echo $(date +"$DATE_FORMAT_LOG")" create $DIR_BACKUP/daily"
+[ $DAILY = false ] || [ -d $DIR_BACKUP/daily ] || check mkdir $DIR_BACKUP/daily
+
+echo $(date +"$DATE_FORMAT_LOG")" create $DIR_BACKUP/weekly"
+[ $WEEKLY = false ] || [ -d $DIR_BACKUP/weekly ] || check mkdir $DIR_BACKUP/weekly
+
+echo $(date +"$DATE_FORMAT_LOG")" create $DIR_BACKUP/monthly"
+[ $MONTHLY = false ] || [ -d $DIR_BACKUP/monthly ] || check mkdir $DIR_BACKUP/monthly
+
+CURRENT_DOW=$(date +'%u')
+CURRENT_DOM=$(date +'%d' | sed -e 's/^0//g')
+
+ROTATE_WEEKLY=$(datediff "now" "-$ROTATE_WEEKLY week")
+ROTATE_MONTHLY=$(datediff "now" "-$ROTATE_MONTHLY month")
+
+check list_db | while read db
+do
+	if [ $MYSQL_DATABASES_ALL -eq 1 ] || [ $(contains $db ${MYSQL_DATABASES[@]};echo $?) -eq 0 ]
+	then
+		if [ $DAILY = true ] && [ $(contains $CURRENT_DOW ${DAYS_DAILY[@]};echo $?) -eq 0 ]
+		then
+			backup $db "daily" $ROTATE_DAILY;
+		elif [ $WEEKLY = true ] && [ $CURRENT_DOW -eq $DAY_WEEKLY ]
+		then
+			backup $db "weekly" $ROTATE_WEEKLY;
+		elif [ $MONTHLY = true ] && [ $CURRENT_DOM -eq $DAY_MONTHLY ]
+		then
+			backup $db "monthly" $ROTATE_MONTHLY;
+		fi
+	fi
+done;
+
+postbackup
+
+exit 0
