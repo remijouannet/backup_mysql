@@ -72,7 +72,6 @@ else
 	exit 1
 fi
 
-rotate $LOG_FILE $LOG_FILE_MAXBYTES $LOG_FILE_ROTATE
 
 logger "backup_mysql launch $EXEC $CONF_FILE"
 $EXEC $CONF_FILE >> $LOG_FILE  2>&1;
@@ -80,5 +79,7 @@ if [ $? -ne 0 ]
 then
 	echo "log" | mail -s "[$HOSTNAME] backup_mysql failed" -a $LOG_FILE $FROM_MAIL $MAIL
 fi
+
+rotate $LOG_FILE $LOG_FILE_MAXBYTES $LOG_FILE_ROTATE
 
 exit 0
