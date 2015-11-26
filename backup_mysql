@@ -130,7 +130,8 @@ ROTATE_MONTHLY=$(datediff "now" "-$ROTATE_MONTHLY month")
 list_db | 
 while read db
 do
-	if [ $MYSQL_DATABASES_ALL -eq 1 ] || [ $(contains $db ${MYSQL_DATABASES[@]};echo $?) -eq 0 ]
+	if [ "$MYSQL_DATABASES_ALL" -eq 1 ] || \
+		[ $(contains $db ${MYSQL_DATABASES[@]};echo $?) -eq 0 ]
 	then
 		if [ $DAILY = true ] && [ $(contains $CURRENT_DOW ${DAYS_DAILY[@]};echo $?) -eq 0 ]
 		then
