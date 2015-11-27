@@ -136,10 +136,14 @@ do
 		if [ $DAILY = true ] && [ $(contains $CURRENT_DOW ${DAYS_DAILY[@]};echo $?) -eq 0 ]
 		then
 			backup $db "daily" $ROTATE_DAILY;
-		elif [ $WEEKLY = true ] && [ $CURRENT_DOW -eq $DAY_WEEKLY ]
+		fi
+		
+		if [ $WEEKLY = true ] && [ $CURRENT_DOW -eq $DAY_WEEKLY ]
 		then
 			backup $db "weekly" $ROTATE_WEEKLY;
-		elif [ $MONTHLY = true ] && [ $CURRENT_DOM -eq $DAY_MONTHLY ]
+		fi
+		
+		if [ $MONTHLY = true ] && [ $CURRENT_DOM -eq $DAY_MONTHLY ]
 		then
 			backup $db "monthly" $ROTATE_MONTHLY;
 		fi
